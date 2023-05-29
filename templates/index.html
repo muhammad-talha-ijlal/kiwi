@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='img/logo.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <title>KiWi</title>
+
+</head>
+
+<body>
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" class="logo" alt="Logo" width="100vw" height="50vw">
+    <h1>Fiverr KiWi</h1>
+    <h3>Compare Fiverr Keywords using Keyword Wizard - KiWi</h3>
+    <div class="input-container">
+        <input type="text" id="keyword-input" class="input-field" placeholder="Enter a keyword">
+        <button id="add-btn">Add</button>
+    </div>
+
+    <div id="chip-container" class="chip-container"></div>
+    <button id="submit-btn" class="submit-btn">Submit</button>
+    <div id="error-container"></div>
+    <script>
+        keywords = []
+        function addKeyword(keyword) {
+            const chipContainer = document.getElementById('chip-container');
+            const chip = document.createElement('div');
+            chip.classList.add('chip');
+            chip.innerHTML = `<span>${keyword}</span><button class="delete-btn" onclick="deleteKeyword(event)">x</button>`;
+            chipContainer.appendChild(chip);
+        }
+
+        function deleteKeyword(event) {
+            const chip = event.target.parentElement;
+            const keyword = chip.querySelector('span').textContent;
+            chip.remove();
+            keywords.pop(keyword);
+        }
+
+        function handleAddButtonClick() {
+            const keywordInput = document.getElementById('keyword-input');
+            const keyword = keywordInput.value.trim();
+            if (keyword.length < 3) {
+                const errorMessage = document.createElement('p');
+                errorMessage.textContent = 'Keyword length ca\'t be less then 3 characters';
+                errorMessage.style.color = 'red';
+
+                const form = document.getElementById('error-container');
+                form.appendChild(errorMessage);
+
+                setTimeout(function () {
+                    errorMessage.remove();
+                }, 2000);
+            }
+            else if (keywords.length >= 3) {
+                const errorMessage = document.createElement('p');
+                errorMessage.textContent = 'Maximum Allows Keywords : 3';
+                errorMessage.style.color = 'red';
+
+                const form = document.getElementById('error-container');
+                form.appendChild(errorMessage);
+
+                setTimeout(function () {
+                    errorMessage.remove();
+                }, 2000);
+            }
+            else if (keywords.includes(keyword.toLowerCase())) {
+                const errorMessage = document.createElement('p');
+                errorMessage.textContent = 'Keyword Already added.';
+                errorMessage.style.color = 'red';
+
+                const form = document.getElementById('error-container');
+                form.appendChild(errorMessage);
+
+                setTimeout(function () {
+                    errorMessage.remove();
+                }, 2000);
+            }
+            else {
+                addKeyword(keyword);
+                keywords.push(keyword.toLowerCase());
+            }
+            keywordInput.value = '';
+            keywordInput.focus();
+        }
+        async function handleSubmitButtonClick() {
+            if (keywords.length > 0) {
+
+
+                const overlay = document.createElement('div');
+                overlay.classList.add('overlay');
+
+                const loadingIcon = document.createElement('div');
+                loadingIcon.classList.add('loading-icon');
+                overlay.appendChild(loadingIcon);
+
+                document.body.appendChild(overlay);
+
+                const requestBody = { keywords };
+                try {
+                    const response = await fetch('http://localhost:5000/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ keywords })
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "file.pdf";
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                    } else {
+                        throw new Error("Error downloading PDF file.");
+                    }
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+
+                overlay.remove();
+                location.reload(); // Refresh the page
+            }
+        }
+
+
+
+        document.getElementById('add-btn').addEventListener('click', handleAddButtonClick);
+        document.getElementById('submit-btn').addEventListener('click', handleSubmitButtonClick);
+    </script>
+</body>
+
+</html>
